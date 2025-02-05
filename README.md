@@ -48,7 +48,8 @@ Daphne's eyes widened. "$10! That's a lot of money!"
 
 Daphne grinned. "I sure am."
 
-[[Let the adventure begin  ->Monday: A Scorcher of a Day!]]```
+[[Let the adventure begin  ->Monday: A Scorcher of a Day!]]
+```
 
 generated from the following org file:
 
