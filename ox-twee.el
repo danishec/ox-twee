@@ -55,11 +55,13 @@
     (section . org-twee-section)
     (paragraph . org-twee-paragraph)
     (plain-text . org-twee-plain-text)
-    (link . org-twee-link))
+    (link . org-twee-link)
+    (src-block . org-twee-src-block))
   :options-alist   '((:twee-story-title-format nil nil org-twee-story-title-format)
 		     (:twee-metadata-format nil nil org-twee-metadata-format)
 		     (:twee-passage-format nil nil org-twee-passage-format)
 		     (:twee-link-format nil nil org-twee-link-format)
+		     (:twee-src-block-format nil nil org-twee-src-block-format)
 		     (:twee-preserve-breaks nil "\\n" org-export-preserve-breaks))
   :filters-alist '((:filter-parse-tree . org-twee-filter-parse-tree))
   :menu-entry
@@ -71,7 +73,7 @@
   ":: StoryTitle
 %s
 
-
+\n
 "
   "Format string for the Twine 2 StoryTitle section."
   :group 'org-export-twee
@@ -81,13 +83,14 @@
   ":: StoryData
 {
   \"ifid\": \"%s\",
-  \"format\": \"Twee\",
+  \"format\": \"%s\",
   \"format-version\": \"%s\",
   \"start\": \"%s\",
   \"zoom\": %s
 }
+\n
 
-
+\n
 "
   "Format string for the Twine 2 metadata section."
   :group 'org-export-twee
@@ -95,9 +98,11 @@
 
 (defcustom org-twee-passage-format
   ":: %s %s
+
 %s
+\n
 
-
+\n
 "
   "Format string for Twine 2 passages."
   :group 'org-export-twee
@@ -108,6 +113,17 @@
   "Format string for Twine 2 links."
   :group 'org-export-twee
   :type 'string)
+
+(defcustom org-twee-src-block-format
+  "<%%
+%s
+%%>
+
+"
+  "Format string for Twine 2 links."
+  :group 'org-export-twee
+  :type 'string)
+
 
 ;;; Filter Functions
 (defun org-twee-filter-parse-tree (tree backend info)
@@ -143,7 +159,7 @@ holding contextual information."
          (parsed-title (org-element-property :raw-value headline))
          (extra-metadata (and (equal level 1)
                               (org-twee-format-metadata headline info))))
-    (if (string-equal parsed-title "Twine 2 Metadata")
+    (if (string-match "Twine 2 Metadata" parsed-title)
         (if extra-metadata
             (concat "\n" extra-metadata "\n\n")
           "")
@@ -159,11 +175,12 @@ HEADLINE is the first, unique headline in the org file with
 Twine metadata.  INFO is a plist holding contextual information."
   (let ((name (org-entry-get headline "name"))
         (ifid (org-entry-get headline "ifid"))
+	(format (org-entry-get headline "format"))
         (format-version (org-entry-get headline "format-version"))
         (start (org-entry-get headline "start"))
         (zoom (org-entry-get headline "zoom")))
     (format (plist-get info :twee-metadata-format)
-            ifid format-version name zoom)))
+            ifid format format-version name zoom)))
 
 (defun org-twee-format-properties (headline)
   "Format the properties for a Twine 2 passage.
@@ -173,7 +190,7 @@ HEADLINE is the headline containing the property drawer"
 	(pid (org-entry-get headline "pid"))
 	(position (org-entry-get headline "position"))
 	(size (org-entry-get headline "size"))
-	(tags (org-entry-get headline "tags")))
+	(tags (org-entry-get headline "tags_")))
     (format " [%s] {\"position\":\"%s\",\"size\":\"%s\"}"
 	    (or tags "")
             (or position "0,0")
@@ -224,6 +241,20 @@ information."
 TEXT is the string to transcode.  INFO is a plist holding
 contextual information."
   text)
+
+
+(defun org-twee-src-block (src-block _contents info)
+  "Transcode the src code block from Org to Twee.
+
+SRC-BLOCK is the element to transcode.  _CONTENTS is nil.
+INFO is a plist holding contextual information."
+  (let* ((code (car (org-export-unravel-code src-block)))
+	 (lang (org-element-property :language src-block)))
+    (cond
+     ((string-match "javascript" lang)
+      (format (plist-get info :twee-src-block-format)
+	      code))
+     (t ""))))
 
 ;;; User-Facing Functions
 ;;;###autoload
